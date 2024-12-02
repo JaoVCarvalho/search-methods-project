@@ -1,17 +1,9 @@
-import matplotlib.pyplot as plt
-import numpy as np
 from collections import deque
-import random
-from matplotlib.animation import FuncAnimation
+import service
 
 goal_state = [[1, 2, 3],
               [8, 0, 4],
               [7, 6, 5]]
-
-def generate_random_state():
-    flattened = list(range(9))
-    random.shuffle(flattened)
-    return [flattened[i:i + 3] for i in range(0, 9, 3)]
 
 def find_zero(state):
     for row in range(len(state)):
@@ -68,59 +60,22 @@ def print_path(path):
             print(line)
         print()
 
-def plot_state(state, ax):
-    ax.clear()
-    ax.set_xticks(np.arange(4) - 0.5, minor=True)
-    ax.set_yticks(np.arange(4) - 0.5, minor=True)
-    ax.grid(which="minor", color="black", linestyle='-', linewidth=2)
-    ax.set_xticks([])
-    ax.set_yticks([])
+def run(initial_random_state):
 
-    # Inverter a matriz para corrigir a orientação
-    flipped_state = state[::-1]
+    initial_state = initial_random_state
 
-    for i in range(3):
-        for j in range(3):
-            tile_value = flipped_state[i][j]
-            ax.text(j, i, str(tile_value), ha='center', va='center', fontsize=20,
-                    color='white' if tile_value != 0 else 'black',
-                    bbox=dict(facecolor='blue' if tile_value != 0 else 'white',
-                              edgecolor='black', boxstyle='round,pad=1'))
+    print("Generated Initial State:")
+    for line in initial_state:
+        print(line)
+    print()
 
+    solution_path = breadth_first_search(initial_state, goal_state)
 
-def animate_solution(solution_path):
-    fig, ax = plt.subplots(figsize=(6, 6))
-    fig.suptitle("8 Puzzle", fontsize=16)
-
-    def update(frame):
-        plot_state(solution_path[frame], ax)
-        ax.set_title(f"Step {frame}")
-
-    anim = FuncAnimation(fig, update, frames=len(solution_path), interval=1000, repeat=False)
-    plt.show()
-
-def run():
-    while True:
-        user_input = input("Press Enter to generate a new initial state, or type 'q' to quit: ").strip()
-        if user_input.lower() == "q":
-            print("Exiting...")
-            break
-
-        initial_state = generate_random_state()
+    if solution_path:
+        print("Solution found!")
         print()
-        print("Generated Initial State:")
-        for line in initial_state:
-            print(line)
+        print_path(solution_path)
+        service.animate_solution(solution_path, "BFS Solution")
+    else:
+        print("No solution found.")
         print()
-
-        solution_path = breadth_first_search(initial_state, goal_state)
-
-        if solution_path:
-            print("Solution found!")
-            print_path(solution_path)
-            animate_solution(solution_path)
-        else:
-            print("No solution found.")
-
-if __name__ == "__main__":
-    run()
