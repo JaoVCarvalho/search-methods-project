@@ -1,8 +1,6 @@
 import bfs
 import a_star
 import service
-from bfs import generate_random_state
-
 
 def main():
     while True:
@@ -27,7 +25,7 @@ def main():
             a_star.run(service.generate_random_state())
 
         elif user_choice == '3':
-            initial_state = generate_random_state()
+            initial_state = service.generate_random_state()
             service.print_default_bfs()
             bfs.run(initial_state)
             service.print_default_a_star()
@@ -35,7 +33,6 @@ def main():
 
         else:
             print("Invalid option. Please try again.")
-
 
 if __name__ == "__main__":
     main()
