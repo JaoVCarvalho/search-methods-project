@@ -1,85 +1,120 @@
 import heapq
 import random
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+
+goal_state = [[1, 2, 3],
+              [8, 0, 4],
+              [7, 6, 5]]
+
+def generate_random_state():
+    flattened = list(range(9))
+    random.shuffle(flattened)
+    return [flattened[i:i + 3] for i in range(0, 9, 3)]
 
 def manhattan_distance(state, goal):
     distance = 0
-    for i in range(1, 9):  # Numbers 1 to 8
-        x1, y1 = divmod(state.index(i), 3)
-        x2, y2 = divmod(goal.index(i), 3)
-        distance += abs(x1 - x2) + abs(y1 - y2)
+    for i in range(3):
+        for j in range(3):
+            value = state[i][j]
+            if value != 0:
+                goal_row, goal_col = divmod(goal.index(value), 3)
+                distance += abs(i - goal_row) + abs(j - goal_col)
     return distance
 
-# Possible moves
 def get_neighbors(state):
     neighbors = []
-    zero_index = state.index(0)
-    x, y = divmod(zero_index, 3)
+    zero_row, zero_col = next((i, j) for i in range(3) for j in range(3) if state[i][j] == 0)
 
-    # Define possible moves (up, down, left, right)
     moves = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-    directions = ['Up', 'Down', 'Left', 'Right']
-
-    for (dx, dy), direction in zip(moves, directions):
-        nx, ny = x + dx, y + dy
-        if 0 <= nx < 3 and 0 <= ny < 3:
-            neighbor = state[:]
-            neighbor[zero_index], neighbor[nx * 3 + ny] = neighbor[nx * 3 + ny], neighbor[zero_index]
-            neighbors.append((neighbor, direction))
-
+    for dx, dy in moves:
+        new_row, new_col = zero_row + dx, zero_col + dy
+        if 0 <= new_row < 3 and 0 <= new_col < 3:
+            new_state = [row[:] for row in state]
+            new_state[zero_row][zero_col], new_state[new_row][new_col] = (
+                new_state[new_row][new_col],
+                new_state[zero_row][zero_col],
+            )
+            neighbors.append(new_state)
     return neighbors
 
-# A* algorithm
+def flatten_state(state):
+    return [cell for row in state for cell in row]
+
 def a_star(initial, goal):
     frontier = []
-    heapq.heappush(frontier, (0 + manhattan_distance(initial, goal), initial, [], ""))  # (priority, state, path, move)
+    goal_flat = flatten_state(goal)
+    heapq.heappush(frontier, (0 + manhattan_distance(initial, goal_flat), initial, []))  # (priority, state, path)
     explored = set()
 
     while frontier:
-        _, current, path, moves = heapq.heappop(frontier)
+        _, current, path = heapq.heappop(frontier)
         if current == goal:
-            return path, moves
+            return path + [current]
 
-        explored.add(tuple(current))
-        for neighbor, direction in get_neighbors(current):
-            if tuple(neighbor) not in explored:
-                new_path = path + [neighbor]
-                new_moves = moves + f"Move: {direction}\n"
-                priority = len(new_path) + manhattan_distance(neighbor, goal)
-                heapq.heappush(frontier, (priority, neighbor, new_path, new_moves))
+        explored.add(tuple(flatten_state(current)))
+        for neighbor in get_neighbors(current):
+            flat_neighbor = tuple(flatten_state(neighbor))
+            if flat_neighbor not in explored:
+                priority = len(path) + manhattan_distance(neighbor, goal_flat)
+                heapq.heappush(frontier, (priority, neighbor, path + [current]))
 
-    return None, None
+    return None
 
-# Generate random initial state and goal state
-def generate_puzzle():
-    state = list(range(9))
-    random.shuffle(state)
-    return state
+def plot_state(state, ax):
+    ax.clear()
+    ax.set_xticks(np.arange(4) - 0.5, minor=True)
+    ax.set_yticks(np.arange(4) - 0.5, minor=True)
+    ax.grid(which="minor", color="black", linestyle='-', linewidth=2)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    flipped_state = state[::-1]
 
-# Print the puzzle
-def print_puzzle(state):
-    for i in range(0, 9, 3):
-        print(state[i:i + 3])
-    print()
+    for i in range(3):
+        for j in range(3):
+            tile_value = flipped_state[i][j]
+            ax.text(j, i, str(tile_value), ha='center', va='center', fontsize=20,
+                    color='white' if tile_value != 0 else 'black',
+                    bbox=dict(facecolor='blue' if tile_value != 0 else 'white',
+                              edgecolor='black', boxstyle='round,pad=1'))
 
-# Main logic
-initial_state = generate_puzzle()
-goal_state = [1, 2, 3, 8, 0, 4, 7, 6, 5]  # Goal: [1, 2, 3, 4, 5, 6, 7, 8, 0]
+def animate_solution(solution_path):
+    fig, ax = plt.subplots(figsize=(6, 6))
+    fig.suptitle("8 Puzzle - A* Solution", fontsize=16)
 
-print("Initial State:")
-print_puzzle(initial_state)
-print("Goal State:")
-print_puzzle(goal_state)
+    def update(frame):
+        plot_state(solution_path[frame], ax)
+        ax.set_title(f"Step {frame}")
 
-# Solve puzzle
-solution, moves = a_star(initial_state, goal_state)
+    anim = FuncAnimation(fig, update, frames=len(solution_path), interval=1000, repeat=False)
+    plt.show()
 
-if solution:
-    print("Solution found in", len(solution), "steps:")
-    for idx, step in enumerate(solution):
-        print(f"Step {idx + 1}:")
-        if idx < len(solution) - 1:
-            # Display the move taken to reach the next step
-            print(f"{moves.split('\n')[idx]}")
-        print_puzzle(step)
-else:
-    print("No solution found.")
+def run():
+    while True:
+        user_input = input("Press Enter to generate a new initial state, or type 'q' to quit: ").strip()
+        if user_input.lower() == "q":
+            print("Exiting...")
+            break
+
+        initial_state = generate_random_state()
+        print("\nGenerated Initial State:")
+        for line in initial_state:
+            print(line)
+        print()
+
+        solution_path = a_star(initial_state, goal_state)
+
+        if solution_path:
+            print("Solution found!")
+            for step, state in enumerate(solution_path):
+                print(f"Step {step}:")
+                for line in state:
+                    print(line)
+                print()
+            animate_solution(solution_path)
+        else:
+            print("No solution found.")
+
+if __name__ == "__main__":
+    run()
