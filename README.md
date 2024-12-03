@@ -5,7 +5,6 @@
 
 - [Descrição](#descricao)
 - [Equipe](#equipe)
-- [Relatório](#relatorio)
   
 ## Descrição
 
@@ -17,6 +16,3 @@ O jogo dos oito é representado por um tabuleiro de 3x3 contendo os números de 
 
 - [Diogo Carrer de Macedo](https://github.com/diogocarrer)
 - [João Victor Carvalho dos Santos](https://github.com/JaoVCarvalho) 
-
-## Relatório
-
